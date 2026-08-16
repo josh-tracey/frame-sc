@@ -1,0 +1,44 @@
+[package]
+name = "frame-sc"
+version = "0.1.0"
+edition = "2021"
+authors = ["Joshua Tracey<joshua.tracey08@gmail.com>"]
+description = "Zero-Cost Spatial Typestates: Compile-time frame of reference and physical unit safety for Rust."
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/example/frame-sc"
+keywords = ["spatial", "typestate", "aerospace", "robotics", "zero-cost"]
+categories = ["no-std", "science", "mathematics"]
+
+[features]
+default = ["std", "serde"]
+std = []
+serde = ["dep:serde"]
+
+[dependencies]
+libm = "0.2"
+serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+trybuild = "1.0"
+
+[[bench]]
+name = "zero_cost"
+harness = false
+
+[[example]]
+name = "maritime_landing"
+path = "examples/maritime_landing.rs"
+
+[[example]]
+name = "wgs84_waypoint_navigation"
+path = "examples/wgs84_waypoint_navigation.rs"
+
+[[example]]
+name = "camera_gimbal_target_tracking"
+path = "examples/camera_gimbal_target_tracking.rs"
+
+[[example]]
+name = "multi_drone_swarm_formation"
+path = "examples/multi_drone_swarm_formation.rs"
