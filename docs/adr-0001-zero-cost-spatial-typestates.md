@@ -37,7 +37,7 @@ We propose `frame-sc`, a Rust static analysis library that encodes **Reference F
 2. **Core Typestate Structures**:
    - `Vector3<F: Frame, U: Unit, T = f32>`: 3D spatial vector with `#[repr(C)]` layout matching `[T; 3]`.
    - `Point3<F: Frame, U: Unit, T = f32>`: 3D spatial position enforcing strict affine space rules (`Point - Point = Vector`, `Point + Vector = Point`, `Point + Point` fails compilation).
-   - `Quaternion<From: Frame, To: Frame, T = f32>`: Singularity-free $SO(3)$ unit quaternion representation with $v' = q v q^*$ vector rotation and ZYX Tait-Bryan Euler constructors (`#[repr(C)]` matching `[T; 4]`).
+   - `Quaternion<From: Frame, To: Frame, T = f32>`: Singularity-free $SO(3)$ unit quaternion representation with $v' = q^* v q$ vector rotation and ZYX Tait-Bryan Euler constructors (`#[repr(C)]` matching `[T; 4]`).
    - `DirectionCosineMatrix<From: Frame, To: Frame, T = f32>`: $SO(3)$ rotation matrix that explicitly transforms `Vector3<From, U, T>` to `Vector3<To, U, T>` and chains matrix multiplications ($R_{A \to B} \times R_{B \to C} = R_{A \to C}$).
    - `Pose3D<From: Frame, To: Frame, U: Unit, T = f32>`: High-level engineering pose combining 3D origin position (`Point3`) and attitude orientation (`DirectionCosineMatrix` / `Quaternion`).
    - `Transform3D<From: Frame, To: Frame, U: Unit, T = f32>`: $SE(3)$ rigid body transformation combining rotation DCM and translational origin offset.

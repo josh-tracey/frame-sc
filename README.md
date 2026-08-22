@@ -37,7 +37,7 @@ The Rust compiler acts as a static physics engine, refusing to compile any opera
 
 - **`#![no_std]` Compatible**: Ready for bare-metal flight control microcontrollers (`libm` integration).
 - **Dual-Tag Typestates**: Types track both `Frame` and `Unit` (`Meters`, `Millimeters`, `Feet`, `Knots`, `MetersPerSecond`, `Radians`).
-- **`Quaternion<From, To>`**: Singularity-free $SO(3)$ unit quaternions with ZYX Tait-Bryan Euler angle constructors and $v' = q v q^*$ vector rotations.
+- **`Quaternion<From, To>`**: Singularity-free $SO(3)$ unit quaternions with ZYX Tait-Bryan Euler angle constructors and $v' = q^* v q$ vector rotations.
 - **`Pose3D<From, To, Unit>`**: High-level engineering pose combining 3D origin position (`Point3`) and attitude orientation (`DirectionCosineMatrix` / `Quaternion`).
 - **`Transform3D<From, To, Unit>`**: $SE(3)$ rigid body transformation matrix for multi-frame composition.
 - **WGS-84 Geodetic Pipeline**: Bi-directional closed-form conversions between WGS-84 $(\text{Lat}, \text{Lon}, \text{Alt})$, ECEF $(X,Y,Z)$, and Local NED $(N,E,D)$.

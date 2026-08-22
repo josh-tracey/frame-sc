@@ -6,7 +6,6 @@ authors = ["Joshua Tracey<joshua.tracey08@gmail.com>"]
 description = "Zero-Cost Spatial Typestates: Compile-time frame of reference and physical unit safety for Rust."
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/example/frame-sc"
 keywords = ["spatial", "typestate", "aerospace", "robotics", "zero-cost"]
 categories = ["no-std", "science", "mathematics"]
 

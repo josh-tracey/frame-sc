@@ -131,7 +131,7 @@ impl<From: Frame, To: Frame> DirectionCosineMatrix<From, To, f32> {
         Vector3::new(x, y, z)
     }
 
-    /// Chain two rotations together: `self` (From -> Inter) followed by `next` (Inter -> Target).
+    /// Chain two rotations together: `self` (From -> To) followed by `next` (To -> Target).
     /// Returns DCM from `From` frame directly to `Target` frame.
     #[inline(always)]
     pub fn chain<Target: Frame>(
@@ -228,7 +228,7 @@ impl<From: Frame, To: Frame> DirectionCosineMatrix<From, To, f64> {
         Vector3::new(x, y, z)
     }
 
-    /// Chain two rotations together: `self` (From -> Inter) followed by `next` (Inter -> Target).
+    /// Chain two rotations together: `self` (From -> To) followed by `next` (To -> Target).
     #[inline(always)]
     pub fn chain<Target: Frame>(
         &self,
@@ -273,19 +273,26 @@ impl<From: Frame, To: Frame> DirectionCosineMatrix<From, To, f64> {
     }
 }
 
-// Implement Vector3 method to rotate via DCM
-impl<F: Frame, U: Unit, T> Vector3<F, U, T> {
+// Convenience methods to rotate a vector into a target frame via a DCM.
+impl<F: Frame, U: Unit> Vector3<F, U, f32> {
     /// Rotate vector into target frame using a Direction Cosine Matrix.
     #[inline(always)]
     pub fn rotate_to<TargetFrame: Frame>(
         self,
         dcm: &DirectionCosineMatrix<F, TargetFrame, f32>,
-    ) -> Vector3<TargetFrame, U, f32>
-    where
-        T: Into<f32>,
-    {
-        let v = Vector3::<F, U, f32>::new(self.x.into(), self.y.into(), self.z.into());
-        dcm.rotate_vector(v)
+    ) -> Vector3<TargetFrame, U, f32> {
+        dcm.rotate_vector(self)
+    }
+}
+
+impl<F: Frame, U: Unit> Vector3<F, U, f64> {
+    /// Rotate vector into target frame using a Direction Cosine Matrix.
+    #[inline(always)]
+    pub fn rotate_to<TargetFrame: Frame>(
+        self,
+        dcm: &DirectionCosineMatrix<F, TargetFrame, f64>,
+    ) -> Vector3<TargetFrame, U, f64> {
+        dcm.rotate_vector(self)
     }
 }
 

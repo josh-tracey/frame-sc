@@ -192,11 +192,19 @@ fn test_quaternion_and_pose() {
     let north_vel: Vector3<LocalNed, Meters> = vec3![LocalNed, Meters, 10.0, 0.0, 0.0];
     let body_vel = q_ned_to_body.rotate_vector(north_vel);
 
+    // A NED "north" vector, viewed in a body frame yawed +90 deg, points out the
+    // body's left (-Y) side under the passive frame-transform convention.
     assert!((body_vel.x - 0.0).abs() < 1e-4);
-    assert!((body_vel.y - 10.0).abs() < 1e-4);
+    assert!((body_vel.y - (-10.0)).abs() < 1e-4);
     assert!((body_vel.z - 0.0).abs() < 1e-4);
 
-    // Convert Quaternion to DCM (BodyFrame -> LocalNed)
+    // Quaternion rotation must agree with its own DCM form.
+    let body_vel_dcm = q_ned_to_body.to_dcm().rotate_vector(north_vel);
+    assert!((body_vel.x - body_vel_dcm.x).abs() < 1e-5);
+    assert!((body_vel.y - body_vel_dcm.y).abs() < 1e-5);
+    assert!((body_vel.z - body_vel_dcm.z).abs() < 1e-5);
+
+    // Invert the NED -> Body quaternion into a Body -> NED DCM for the pose.
     let dcm_body_to_ned = q_ned_to_body.to_dcm().transpose();
     let drone_pos_ned: Point3<LocalNed, Meters> = pt3![LocalNed, Meters, 50.0, 100.0, -25.0];
     let drone_pose = Pose3D::new(drone_pos_ned, dcm_body_to_ned);
@@ -205,4 +213,55 @@ fn test_quaternion_and_pose() {
     let pt_ned = drone_pose.transform_point(pt_body);
 
     assert_eq!(pt_ned, pt3![LocalNed, Meters, 50.0, 105.0, -25.0]);
+}
+
+#[test]
+fn test_quaternion_dcm_convention_consistency() {
+    let (yaw, pitch, roll) = (1.2f32, -0.4f32, 0.7f32);
+
+    let dcm = DirectionCosineMatrix::<LocalNed, BodyFrame>::from_euler_zyx(yaw, pitch, roll);
+    let q = Quaternion::<LocalNed, BodyFrame>::from_euler_zyx(yaw, pitch, roll);
+
+    let v: Vector3<LocalNed, Meters> = vec3![LocalNed, Meters, 3.0, -2.0, 7.0];
+
+    let via_dcm = dcm.rotate_vector(v);
+    let via_q = q.rotate_vector(v);
+    let via_q_dcm = q.to_dcm().rotate_vector(v);
+
+    assert!((via_q.x - via_dcm.x).abs() < 1e-5);
+    assert!((via_q.y - via_dcm.y).abs() < 1e-5);
+    assert!((via_q.z - via_dcm.z).abs() < 1e-5);
+    assert!((via_q_dcm.x - via_dcm.x).abs() < 1e-5);
+    assert!((via_q_dcm.y - via_dcm.y).abs() < 1e-5);
+    assert!((via_q_dcm.z - via_dcm.z).abs() < 1e-5);
+
+    // Round-trip through the inverse DCM restores the original vector.
+    let restored = dcm.transpose().rotate_vector(via_dcm);
+    assert!((restored.x - v.x).abs() < 1e-4);
+    assert!((restored.y - v.y).abs() < 1e-4);
+    assert!((restored.z - v.z).abs() < 1e-4);
+}
+
+#[test]
+fn test_quaternion_f64() {
+    let q = Quaternion::<LocalNed, BodyFrame, f64>::from_euler_zyx(0.9, -0.3, 0.2);
+    let dcm = q.to_dcm();
+
+    let v: Vector3<LocalNed, Meters, f64> = vec3![LocalNed, Meters, 5.0, 1.0, -8.0];
+
+    let via_q = q.rotate_vector(v);
+    let via_dcm = dcm.rotate_vector(v);
+
+    assert!((via_q.x - via_dcm.x).abs() < 1e-9);
+    assert!((via_q.y - via_dcm.y).abs() < 1e-9);
+    assert!((via_q.z - via_dcm.z).abs() < 1e-9);
+
+    // Composition must match sequential application.
+    let q1 = Quaternion::<LocalNed, MaritimeTargetFrame, f64>::from_euler_zyx(0.5, 0.0, 0.0);
+    let q2 = Quaternion::<MaritimeTargetFrame, BodyFrame, f64>::from_euler_zyx(0.0, 0.3, 0.0);
+    let seq = q2.rotate_vector(q1.rotate_vector(v));
+    let composed = (q1 * q2).rotate_vector(v);
+    assert!((seq.x - composed.x).abs() < 1e-9);
+    assert!((seq.y - composed.y).abs() < 1e-9);
+    assert!((seq.z - composed.z).abs() < 1e-9);
 }
