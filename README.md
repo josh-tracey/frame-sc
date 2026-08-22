@@ -29,7 +29,7 @@ The Rust compiler acts as a static physics engine, refusing to compile any opera
 
 1. **Dual Frame + Unit Typestates**: Every vector/point encodes both `Frame` AND `Unit` (`Vector3<Frame, Unit>`).
 2. **Zero Runtime Overhead**: 100% `#[repr(C)]` layout matching raw scalar arrays (`size_of::<Vector3<F, U, f32>>() == 12` bytes, `size_of::<Quaternion>() == 16` bytes).
-3. **Hard Real-Time `#![no_std]`**: Pure lightweight Rust with zero dynamic heap allocations (`no_alloc`) and zero heavy third-party dependencies.
+3. **Hard Real-Time `#![no_std]`**: Pure lightweight Rust with zero dynamic heap allocations (`no_alloc`) and no heavy dependencies (`libm`, plus optional `serde`).
 
 ---
 
@@ -41,6 +41,14 @@ The Rust compiler acts as a static physics engine, refusing to compile any opera
 - **`Pose3D<From, To, Unit>`**: High-level engineering pose combining 3D origin position (`Point3`) and attitude orientation (`DirectionCosineMatrix` / `Quaternion`).
 - **`Transform3D<From, To, Unit>`**: $SE(3)$ rigid body transformation matrix for multi-frame composition.
 - **WGS-84 Geodetic Pipeline**: Bi-directional closed-form conversions between WGS-84 $(\text{Lat}, \text{Lon}, \text{Alt})$, ECEF $(X,Y,Z)$, and Local NED $(N,E,D)$.
+- **Optional `serde` Serialization**: Feature-gated `Serialize`/`Deserialize` impls for `Vector3`, `Point3`, `Scalar`, `Quaternion`, `DirectionCosineMatrix`, `Transform3D`, `Pose3D`, and `Wgs84Position`.
+
+### Cargo Features
+
+| Feature | Default | Description |
+| :--- | :---: | :--- |
+| `std` | ✅ | Enables `std` floating-point methods (`.sqrt()`, trig, `.to_radians()`). |
+| `serde` | ✅ | Derives `serde::Serialize` / `serde::Deserialize` on the spatial types. Disable with `--no-default-features` for bare-metal builds. |
 
 ---
 

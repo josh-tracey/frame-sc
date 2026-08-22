@@ -184,6 +184,8 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "libm",
+ "serde",
+ "serde_json",
  "trybuild",
 ]
 

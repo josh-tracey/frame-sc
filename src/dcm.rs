@@ -13,9 +13,16 @@ use crate::vector::Vector3;
 /// Under standard aerospace / robotics conventions:
 /// `v_To = DCM_{From->To} * v_From`
 #[repr(C)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(bound(serialize = "T: serde::Serialize", deserialize = "T: serde::de::DeserializeOwned"))
+)]
 pub struct DirectionCosineMatrix<From: Frame, To: Frame, T = f32> {
     pub m: [[T; 3]; 3],
+    #[cfg_attr(feature = "serde", serde(skip))]
     _from: PhantomData<From>,
+    #[cfg_attr(feature = "serde", serde(skip))]
     _to: PhantomData<To>,
 }
 

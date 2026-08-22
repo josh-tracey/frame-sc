@@ -15,10 +15,17 @@ use crate::vector::Vector3;
 /// - `dcm`: SO(3) Rotation Matrix (`From -> To`)
 /// - `translation`: Translational origin displacement of `From` expressed in `To` frame.
 #[repr(C)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(bound(serialize = "T: serde::Serialize", deserialize = "T: serde::de::DeserializeOwned"))
+)]
 pub struct Transform3D<From: Frame, To: Frame, U: Unit, T = f32> {
     pub dcm: DirectionCosineMatrix<From, To, T>,
     pub translation: Vector3<To, U, T>,
+    #[cfg_attr(feature = "serde", serde(skip))]
     _from: PhantomData<From>,
+    #[cfg_attr(feature = "serde", serde(skip))]
     _to: PhantomData<To>,
 }
 

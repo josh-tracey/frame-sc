@@ -16,6 +16,11 @@ use crate::vector::Vector3;
 /// Memory layout is `#[repr(C)]` matching `[T; 4]` (16 bytes for `f32`).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(bound(serialize = "T: serde::Serialize", deserialize = "T: serde::de::DeserializeOwned"))
+)]
 pub struct Quaternion<From: Frame, To: Frame, T: Copy = f32> {
     /// Scalar real component (w)
     pub w: T,
@@ -25,7 +30,9 @@ pub struct Quaternion<From: Frame, To: Frame, T: Copy = f32> {
     pub y: T,
     /// Vector imaginary z component
     pub z: T,
+    #[cfg_attr(feature = "serde", serde(skip))]
     _from: PhantomData<From>,
+    #[cfg_attr(feature = "serde", serde(skip))]
     _to: PhantomData<To>,
 }
 

@@ -7,8 +7,14 @@ use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAss
 /// A scalar magnitude bound to a physical unit `U` (e.g. `Scalar<Meters, f32>`).
 #[repr(transparent)]
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(bound(serialize = "T: serde::Serialize", deserialize = "T: serde::de::DeserializeOwned"))
+)]
 pub struct Scalar<U: Unit, T = f32> {
     pub value: T,
+    #[cfg_attr(feature = "serde", serde(skip))]
     _unit: PhantomData<U>,
 }
 
