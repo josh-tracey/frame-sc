@@ -18,7 +18,10 @@ use crate::vector::Vector3;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
     feature = "serde",
-    serde(bound(serialize = "T: serde::Serialize", deserialize = "T: serde::de::DeserializeOwned"))
+    serde(bound(
+        serialize = "T: serde::Serialize",
+        deserialize = "T: serde::de::DeserializeOwned"
+    ))
 )]
 pub struct Transform3D<From: Frame, To: Frame, U: Unit, T = f32> {
     pub dcm: DirectionCosineMatrix<From, To, T>,

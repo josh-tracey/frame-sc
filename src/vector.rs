@@ -15,7 +15,10 @@ use crate::units::{ConvertUnit, Unit};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
     feature = "serde",
-    serde(bound(serialize = "T: serde::Serialize", deserialize = "T: serde::de::DeserializeOwned"))
+    serde(bound(
+        serialize = "T: serde::Serialize",
+        deserialize = "T: serde::de::DeserializeOwned"
+    ))
 )]
 pub struct Vector3<F: Frame, U: Unit, T = f32> {
     pub x: T,
@@ -150,39 +153,38 @@ impl<F: Frame, U: Unit> Vector3<F, U, f32> {
 
     /// Euclidean norm / magnitude.
     #[inline(always)]
-    #[cfg(feature = "std")]
-    pub fn norm(self) -> Scalar<U, f32> {
-        Scalar::new(self.norm_sq().sqrt())
-    }
-
-    /// Euclidean norm / magnitude (`no_std` using `libm`).
-    #[inline(always)]
-    #[cfg(not(feature = "std"))]
     pub fn norm(self) -> Scalar<U, f32> {
         Scalar::new(libm::sqrtf(self.norm_sq()))
     }
 
-    /// Normalize vector to unit length (returns zero vector if norm is 0).
-    #[inline(always)]
-    #[cfg(feature = "std")]
+    /// Whether all components are finite (no NaN or infinity).
+    #[inline]
+    pub fn is_finite(self) -> bool {
+        self.x.is_finite() && self.y.is_finite() && self.z.is_finite()
+    }
+
+    /// Normalize vector to unit length.
+    ///
+    /// Returns the zero vector if the input is zero or non-finite (NaN/∞).
+    /// Prefer `try_normalize` to distinguish those cases explicitly.
+    #[inline]
     pub fn normalize(self) -> Self {
-        let n = self.norm_sq().sqrt();
-        if n > 1e-12 {
+        let n = libm::sqrtf(self.norm_sq());
+        if n.is_finite() && n > 1e-12 {
             self / n
         } else {
             Self::ZERO
         }
     }
 
-    /// Normalize vector to unit length (`no_std` using `libm`).
-    #[inline(always)]
-    #[cfg(not(feature = "std"))]
-    pub fn normalize(self) -> Self {
+    /// Fallible normalization: returns `None` if the input is zero or non-finite.
+    #[inline]
+    pub fn try_normalize(self) -> Option<Self> {
         let n = libm::sqrtf(self.norm_sq());
-        if n > 1e-12 {
-            self / n
+        if n.is_finite() && n > 1e-12 {
+            Some(self / n)
         } else {
-            Self::ZERO
+            None
         }
     }
 }
@@ -225,39 +227,38 @@ impl<F: Frame, U: Unit> Vector3<F, U, f64> {
 
     /// Euclidean norm / magnitude.
     #[inline(always)]
-    #[cfg(feature = "std")]
-    pub fn norm(self) -> Scalar<U, f64> {
-        Scalar::new(self.norm_sq().sqrt())
-    }
-
-    /// Euclidean norm / magnitude (`no_std` using `libm`).
-    #[inline(always)]
-    #[cfg(not(feature = "std"))]
     pub fn norm(self) -> Scalar<U, f64> {
         Scalar::new(libm::sqrt(self.norm_sq()))
     }
 
-    /// Normalize vector to unit length (returns zero vector if norm is 0).
-    #[inline(always)]
-    #[cfg(feature = "std")]
+    /// Whether all components are finite (no NaN or infinity).
+    #[inline]
+    pub fn is_finite(self) -> bool {
+        self.x.is_finite() && self.y.is_finite() && self.z.is_finite()
+    }
+
+    /// Normalize vector to unit length.
+    ///
+    /// Returns the zero vector if the input is zero or non-finite (NaN/∞).
+    /// Prefer `try_normalize` to distinguish those cases explicitly.
+    #[inline]
     pub fn normalize(self) -> Self {
-        let n = self.norm_sq().sqrt();
-        if n > 1e-15 {
+        let n = libm::sqrt(self.norm_sq());
+        if n.is_finite() && n > 1e-15 {
             self / n
         } else {
             Self::ZERO
         }
     }
 
-    /// Normalize vector to unit length (`no_std` using `libm`).
-    #[inline(always)]
-    #[cfg(not(feature = "std"))]
-    pub fn normalize(self) -> Self {
+    /// Fallible normalization: returns `None` if the input is zero or non-finite.
+    #[inline]
+    pub fn try_normalize(self) -> Option<Self> {
         let n = libm::sqrt(self.norm_sq());
-        if n > 1e-15 {
-            self / n
+        if n.is_finite() && n > 1e-15 {
+            Some(self / n)
         } else {
-            Self::ZERO
+            None
         }
     }
 }

@@ -9,11 +9,15 @@ use crate::vector::Vector3;
 use core::fmt::Debug;
 
 /// 3D Spatial Pose combining a 3D position (`Point3<To, U, T>`) and attitude orientation (`DirectionCosineMatrix<From, To, T>`).
+#[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
     feature = "serde",
-    serde(bound(serialize = "T: serde::Serialize", deserialize = "T: serde::de::DeserializeOwned"))
+    serde(bound(
+        serialize = "T: serde::Serialize",
+        deserialize = "T: serde::de::DeserializeOwned"
+    ))
 )]
 pub struct Pose3D<From: Frame, To: Frame, U: Unit, T: Copy = f32> {
     /// Position point of origin in `To` reference frame.

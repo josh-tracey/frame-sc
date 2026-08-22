@@ -4,6 +4,7 @@ use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ops::Mul;
 
+use crate::error::ValidationError;
 use crate::frames::Frame;
 use crate::units::Unit;
 use crate::vector::Vector3;
@@ -16,7 +17,10 @@ use crate::vector::Vector3;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
     feature = "serde",
-    serde(bound(serialize = "T: serde::Serialize", deserialize = "T: serde::de::DeserializeOwned"))
+    serde(bound(
+        serialize = "T: serde::Serialize",
+        deserialize = "T: serde::de::DeserializeOwned"
+    ))
 )]
 pub struct DirectionCosineMatrix<From: Frame, To: Frame, T = f32> {
     pub m: [[T; 3]; 3],
@@ -90,21 +94,7 @@ impl<From: Frame, To: Frame> DirectionCosineMatrix<From, To, f32> {
     /// Construct DCM from Z-Y-X Euler angles (Yaw, Pitch, Roll in radians).
     ///
     /// Transforms a vector from reference frame `From` to `To`.
-    #[cfg(feature = "std")]
-    pub fn from_euler_zyx(yaw: f32, pitch: f32, roll: f32) -> Self {
-        let (cy, sy) = (yaw.cos(), yaw.sin());
-        let (cp, sp) = (pitch.cos(), pitch.sin());
-        let (cr, sr) = (roll.cos(), roll.sin());
-
-        Self::new([
-            [cy * cp, sy * cp, -sp],
-            [cy * sp * sr - sy * cr, sy * sp * sr + cy * cr, cp * sr],
-            [cy * sp * cr + sy * sr, sy * sp * cr - cy * sr, cp * cr],
-        ])
-    }
-
-    /// Construct DCM from Z-Y-X Euler angles (`no_std` using `libm`).
-    #[cfg(not(feature = "std"))]
+    #[inline]
     pub fn from_euler_zyx(yaw: f32, pitch: f32, roll: f32) -> Self {
         let (cy, sy) = (libm::cosf(yaw), libm::sinf(yaw));
         let (cp, sp) = (libm::cosf(pitch), libm::sinf(pitch));
@@ -189,21 +179,7 @@ impl<From: Frame, To: Frame> DirectionCosineMatrix<From, To, f64> {
     pub const IDENTITY: Self = Self::new([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]);
 
     /// Construct DCM from Z-Y-X Euler angles (Yaw, Pitch, Roll in radians).
-    #[cfg(feature = "std")]
-    pub fn from_euler_zyx(yaw: f64, pitch: f64, roll: f64) -> Self {
-        let (cy, sy) = (yaw.cos(), yaw.sin());
-        let (cp, sp) = (pitch.cos(), pitch.sin());
-        let (cr, sr) = (roll.cos(), roll.sin());
-
-        Self::new([
-            [cy * cp, sy * cp, -sp],
-            [cy * sp * sr - sy * cr, sy * sp * sr + cy * cr, cp * sr],
-            [cy * sp * cr + sy * sr, sy * sp * cr - cy * sr, cp * cr],
-        ])
-    }
-
-    /// Construct DCM from Z-Y-X Euler angles (`no_std` using `libm`).
-    #[cfg(not(feature = "std"))]
+    #[inline]
     pub fn from_euler_zyx(yaw: f64, pitch: f64, roll: f64) -> Self {
         let (cy, sy) = (libm::cos(yaw), libm::sin(yaw));
         let (cp, sp) = (libm::cos(pitch), libm::sin(pitch));
@@ -321,5 +297,94 @@ impl<A: Frame, B: Frame, C: Frame> Mul<DirectionCosineMatrix<B, C, f64>>
     #[inline(always)]
     fn mul(self, rhs: DirectionCosineMatrix<B, C, f64>) -> Self::Output {
         self.chain(&rhs)
+    }
+}
+
+impl<From: Frame, To: Frame> DirectionCosineMatrix<From, To, f32> {
+    /// Whether this matrix is orthonormal (a valid proper rotation) within tolerance.
+    ///
+    /// Checks that all entries are finite, the columns form an orthonormal basis
+    /// (`RᵀR = I`), and the determinant is `+1`.
+    #[inline]
+    pub fn is_orthonormal(&self) -> bool {
+        const TOL: f32 = 1e-4;
+        let m = self.m;
+        for row in &m {
+            for &e in row {
+                if !e.is_finite() {
+                    return false;
+                }
+            }
+        }
+        let dot = |a: [f32; 3], b: [f32; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        let c0 = [m[0][0], m[1][0], m[2][0]];
+        let c1 = [m[0][1], m[1][1], m[2][1]];
+        let c2 = [m[0][2], m[1][2], m[2][2]];
+
+        let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+            - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+
+        (dot(c0, c0) - 1.0).abs() < TOL
+            && (dot(c1, c1) - 1.0).abs() < TOL
+            && (dot(c2, c2) - 1.0).abs() < TOL
+            && dot(c0, c1).abs() < TOL
+            && dot(c0, c2).abs() < TOL
+            && dot(c1, c2).abs() < TOL
+            && (det - 1.0).abs() < TOL
+    }
+
+    /// Fallible constructor: returns `Ok` only if the matrix is orthonormal.
+    ///
+    /// The infallible `new`/const constructor is unchecked; prefer this for untrusted input.
+    pub fn try_new_orthonormal(m: [[f32; 3]; 3]) -> Result<Self, ValidationError> {
+        let dcm = Self::new(m);
+        if dcm.is_orthonormal() {
+            Ok(dcm)
+        } else {
+            Err(ValidationError::DcmNotOrthonormal)
+        }
+    }
+}
+
+impl<From: Frame, To: Frame> DirectionCosineMatrix<From, To, f64> {
+    /// Whether this matrix is orthonormal (a valid proper rotation) within tolerance.
+    #[inline]
+    pub fn is_orthonormal(&self) -> bool {
+        const TOL: f64 = 1e-9;
+        let m = self.m;
+        for row in &m {
+            for &e in row {
+                if !e.is_finite() {
+                    return false;
+                }
+            }
+        }
+        let dot = |a: [f64; 3], b: [f64; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        let c0 = [m[0][0], m[1][0], m[2][0]];
+        let c1 = [m[0][1], m[1][1], m[2][1]];
+        let c2 = [m[0][2], m[1][2], m[2][2]];
+
+        let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+            - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+
+        (dot(c0, c0) - 1.0).abs() < TOL
+            && (dot(c1, c1) - 1.0).abs() < TOL
+            && (dot(c2, c2) - 1.0).abs() < TOL
+            && dot(c0, c1).abs() < TOL
+            && dot(c0, c2).abs() < TOL
+            && dot(c1, c2).abs() < TOL
+            && (det - 1.0).abs() < TOL
+    }
+
+    /// Fallible constructor: returns `Ok` only if the matrix is orthonormal.
+    pub fn try_new_orthonormal(m: [[f64; 3]; 3]) -> Result<Self, ValidationError> {
+        let dcm = Self::new(m);
+        if dcm.is_orthonormal() {
+            Ok(dcm)
+        } else {
+            Err(ValidationError::DcmNotOrthonormal)
+        }
     }
 }

@@ -53,3 +53,20 @@ fn serde_round_trips_all_types() {
     let w = Wgs84Position::new(37.7749, -122.4194, 10.0);
     round_trip(&w);
 }
+
+#[test]
+fn serde_wgs84_rejects_invalid() {
+    let ok: Wgs84Position =
+        serde_json::from_str(r#"{"lat_deg":10.0,"lon_deg":20.0,"alt_m":30.0}"#).unwrap();
+    assert_eq!(ok, Wgs84Position::new(10.0, 20.0, 30.0));
+
+    // Out-of-range latitude/longitude must fail deserialization.
+    assert!(
+        serde_json::from_str::<Wgs84Position>(r#"{"lat_deg":91.0,"lon_deg":0.0,"alt_m":0.0}"#)
+            .is_err()
+    );
+    assert!(serde_json::from_str::<Wgs84Position>(
+        r#"{"lat_deg":0.0,"lon_deg":181.0,"alt_m":0.0}"#
+    )
+    .is_err());
+}

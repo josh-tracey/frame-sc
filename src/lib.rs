@@ -35,8 +35,10 @@
 //! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![forbid(unsafe_code)]
 
 pub mod dcm;
+pub mod error;
 pub mod frames;
 pub mod macros;
 pub mod point;
@@ -50,6 +52,7 @@ pub mod wgs84;
 
 // Top-level re-exports
 pub use dcm::DirectionCosineMatrix;
+pub use error::ValidationError;
 pub use frames::{BodyFrame, CameraFrame, Ecef, Frame, LocalEnu, LocalNed, MaritimeTargetFrame};
 pub use point::Point3;
 pub use pose::Pose3D;

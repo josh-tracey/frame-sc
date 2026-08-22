@@ -20,7 +20,10 @@ use crate::vector::Vector3;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
     feature = "serde",
-    serde(bound(serialize = "T: serde::Serialize", deserialize = "T: serde::de::DeserializeOwned"))
+    serde(bound(
+        serialize = "T: serde::Serialize",
+        deserialize = "T: serde::de::DeserializeOwned"
+    ))
 )]
 pub struct Point3<F: Frame, U: Unit, T = f32> {
     pub x: T,
@@ -134,16 +137,14 @@ impl<F: Frame, U: Unit> Point3<F, U, f32> {
         Point3::new(self.x * s, self.y * s, self.z * s)
     }
 
-    /// Distance to another point in the same frame and unit.
-    #[inline(always)]
-    #[cfg(feature = "std")]
-    pub fn distance_to(self, other: Self) -> Scalar<U, f32> {
-        (self - other).norm()
+    /// Whether all components are finite (no NaN or infinity).
+    #[inline]
+    pub fn is_finite(self) -> bool {
+        self.x.is_finite() && self.y.is_finite() && self.z.is_finite()
     }
 
-    /// Distance to another point in the same frame and unit (`no_std`).
+    /// Distance to another point in the same frame and unit.
     #[inline(always)]
-    #[cfg(not(feature = "std"))]
     pub fn distance_to(self, other: Self) -> Scalar<U, f32> {
         (self - other).norm()
     }
@@ -160,16 +161,14 @@ impl<F: Frame, U: Unit> Point3<F, U, f64> {
         Point3::new(self.x * s, self.y * s, self.z * s)
     }
 
-    /// Distance to another point in the same frame and unit.
-    #[inline(always)]
-    #[cfg(feature = "std")]
-    pub fn distance_to(self, other: Self) -> Scalar<U, f64> {
-        (self - other).norm()
+    /// Whether all components are finite (no NaN or infinity).
+    #[inline]
+    pub fn is_finite(self) -> bool {
+        self.x.is_finite() && self.y.is_finite() && self.z.is_finite()
     }
 
-    /// Distance to another point in the same frame and unit (`no_std`).
+    /// Distance to another point in the same frame and unit.
     #[inline(always)]
-    #[cfg(not(feature = "std"))]
     pub fn distance_to(self, other: Self) -> Scalar<U, f64> {
         (self - other).norm()
     }

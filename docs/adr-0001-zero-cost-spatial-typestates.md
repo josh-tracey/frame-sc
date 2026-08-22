@@ -73,6 +73,8 @@ let total_velocity = drone_velocity + q_ned_to_body.rotate_vector(wind_vector);
 - **Zero Allocations:** No heap allocation (`alloc`) required. All operations execute on stack/registers.
 - **Embedded Compatibility:** Full `#![no_std]` compatibility using `libm` for scalar floating-point math (`sqrt`, `sin`, `cos`, `atan2`).
 - **Optional Serialization:** All public spatial types derive `serde::Serialize` / `serde::Deserialize` behind the optional `serde` feature (enabled by default; disable with `--no-default-features`). Serialization is opt-in and does not affect the `#[repr(C)]` memory layout, `no_alloc`, or determinism guarantees.
+- **Determinism:** All transcendental math is routed through a single `libm` backend, so results are bit-identical across host and embedded targets (no platform-dependent `std` math).
+- **Validation & Invariants:** Fallible constructors (`try_new`, `try_new_orthonormal`) validate WGS-84 ranges, quaternion unit norm, and DCM orthonormality, returning `Result`. The library contains no panics or `unsafe` code (`#![forbid(unsafe_code)]`).
 
 ---
 

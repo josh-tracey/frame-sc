@@ -47,8 +47,17 @@ The Rust compiler acts as a static physics engine, refusing to compile any opera
 
 | Feature | Default | Description |
 | :--- | :---: | :--- |
-| `std` | ✅ | Enables `std` floating-point methods (`.sqrt()`, trig, `.to_radians()`). |
-| `serde` | ✅ | Derives `serde::Serialize` / `serde::Deserialize` on the spatial types. Disable with `--no-default-features` for bare-metal builds. |
+| `std` | ✅ | Links the standard library; disable with `--no-default-features` for `#![no_std]` bare-metal builds. All math uses `libm` in both modes. |
+| `serde` | ✅ | Derives `serde::Serialize` / `serde::Deserialize` on the spatial types (with range validation on `Wgs84Position`). |
+
+### Safety, Determinism & Validation
+
+- **Deterministic math**: a single `libm` backend for all transcendental functions, so results are bit-identical across host and embedded targets.
+- **No `unsafe`** (enforced by `#![forbid(unsafe_code)]`) and **no panics** in library code.
+- **Explicit invariants**: `Quaternion::normalize` / `is_normalized`, `DirectionCosineMatrix::is_orthonormal`, and `Wgs84Position::try_new`.
+- **Fallible constructors**: `try_new` / `try_new_orthonormal` return `Result` and reject non-finite or invalid inputs; the `const fn new` constructors are unchecked and documented as such.
+- **Non-finite policy**: `normalize` returns a safe fallback (zero vector / identity quaternion) for zero or non-finite input; use `try_normalize` (returns `Option`) to detect it.
+- **Operating envelope**: the Local NED helper is a flat-Earth tangent plane (accurate for short ranges, singular at the poles); WGS-84 latitude/longitude are validated to `[-90, 90]` / `[-180, 180]`.
 
 ---
 
@@ -100,10 +109,19 @@ cargo run --example multi_drone_swarm_formation
 ## Verification & Benchmarks
 
 ```bash
-# Run integration & trybuild compile-fail safety tests
+# Full test suite (integration, compile-fail, property-based, edge cases)
 cargo test
 
-# Run zero-cost Criterion benchmarks
+# Property-based round-trip checks (ECEF<->WGS84, quaternion<->DCM, transforms)
+cargo test --test proptest
+
+# no_std / bare-metal cross-compile
+cargo build --target riscv32imac-unknown-none-elf --no-default-features
+
+# Undefined-behavior check (requires nightly + miri component)
+cargo miri test --no-default-features --test integration_tests --test edge_cases
+
+# Zero-cost Criterion benchmarks
 cargo bench
 ```
 
